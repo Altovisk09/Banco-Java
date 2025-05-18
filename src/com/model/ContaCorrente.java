@@ -14,12 +14,23 @@ public class ContaCorrente extends Conta implements Transferiveis {
     }
 
     @Override
-    public double transferenciaTED(double valor) {
-        return 0;
+    public double transferenciaTED(double valor, Conta contaDestino) {
+        double taxa = 5.0; // taxa fixa TED
+        if (valor + taxa <= this.saldo && valor > 0) {
+            this.saldo -= (valor + taxa);
+            contaDestino.depositar(valor);
+            return valor;
+        }
+        return 0; // falha na transferência
     }
 
     @Override
-    public double transferenciaPIX(double valor) {
+    public double transferenciaPIX(double valor, Conta contaDestino) {
+        if (valor <= this.saldo && valor > 0) { // PIX sem taxa
+            this.saldo -= valor;
+            contaDestino.depositar(valor);
+            return valor;
+        }
         return 0;
     }
 }

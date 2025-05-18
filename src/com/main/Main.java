@@ -5,37 +5,34 @@ import com.bank.InstituicaoBancaria;
 import com.model.Cliente;
 import com.model.Conta;
 import com.model.ContaCorrente;
+import com.model.ContaSalario;
+import com.model.interfaces.Transferiveis;
 
 import java.util.ArrayList;
 import java.util.List;
 
 public class Main {
     public static void main(String[] args) {
-
-        // === CRIANDO BANCOS ===
         InstituicaoBancaria bradesco = new InstituicaoBancaria("Bradesco");
         InstituicaoBancaria santander = new InstituicaoBancaria("Santander");
 
-        // === CRIANDO AGENCIAS ===
-        //Bradesco
         Agencia bradescoAg1 = new Agencia("0001");
         Agencia bradescoAg2 = new Agencia("0002");
-        bradesco.adicionarAgencia(bradescoAg1);
-        bradesco.adicionarAgencia(bradescoAg2);
-        //Santander
         Agencia santanderAg1 = new Agencia("1234");
         Agencia santanderAg2 = new Agencia("1235");
+
+        bradesco.adicionarAgencia(bradescoAg1);
+        bradesco.adicionarAgencia(bradescoAg2);
         santander.adicionarAgencia(santanderAg1);
         santander.adicionarAgencia(santanderAg2);
 
-        // === CRIANDO CLIENTES ===
         List<Conta> todasContas = new ArrayList<>();
 
         String[] nomes = {
-                "Alice", "Bob", "Carlos",     // Bradesco Ag 1
-                "Diana", "Eduardo", "Fernanda", // Bradesco Ag 2
-                "Gabriel", "Heloisa", "Igor",  // Santander Ag 1
-                "Joana", "Kaio", "Laura"       // Santander Ag 2
+                "Alice", "Bob", "Carlos",
+                "Diana", "Eduardo", "Fernanda",
+                "Gabriel", "Heloisa", "Igor",
+                "Joana", "Kaio", "Laura"
         };
 
         String[] cpfs = {
@@ -45,12 +42,18 @@ public class Main {
                 "000.000.000-00", "101.101.101-10", "202.202.202-20"
         };
 
-        // Distribuir os clientes entre agências
+        // Criar contas misturando ContaCorrente e ContaSalario
         for (int i = 0; i < nomes.length; i++) {
             Cliente c = new Cliente(nomes[i], cpfs[i]);
-            Conta conta = new ContaCorrente("C" + (i + 1), c);
-            conta.depositar(1000); // depósito inicial
+            Conta conta;
 
+            if (i % 2 == 0) { // pares = ContaCorrente
+                conta = new ContaCorrente("C" + (i + 1), c);
+            } else { // ímpares = ContaSalario
+                conta = new ContaSalario("C" + (i + 1), c);
+            }
+
+            conta.depositar(1000);
             todasContas.add(conta);
 
             if (i < 3) bradescoAg1.adicionarConta(conta);
@@ -59,23 +62,24 @@ public class Main {
             else santanderAg2.adicionarConta(conta);
         }
 
-        // === FAZENDO TRANSFERÊNCIAS SIMPLES ENTRE CONTAS ===
-        // Alice (C1) transfere 200 para Bob (C2)
-        transfere(todasContas.get(0), todasContas.get(1), 200);
+        // Realizar transferências usando TED e PIX diretamente
 
-        // Diana (C4) transfere 150 para Carlos (C3)
-        transfere(todasContas.get(3), todasContas.get(2), 150);
+        // Alice (C1) TED para Bob (C2)
+        transferenciaTED((Transferiveis) todasContas.get(0), todasContas.get(1), 200);
 
-        // Joana (C10) transfere 100 para Eduardo (C5)
-        transfere(todasContas.get(9), todasContas.get(4), 100);
+        // Diana (C4) PIX para Carlos (C3)
+        transferenciaPIX((Transferiveis) todasContas.get(3), todasContas.get(2), 150);
 
-        // Laura (C12) transfere 50 para Igor (C9)
-        transfere(todasContas.get(11), todasContas.get(8), 50);
+        // Joana (C10) TED para Eduardo (C5)
+        transferenciaTED((Transferiveis) todasContas.get(9), todasContas.get(4), 100);
 
-        // Gabriel (C7) transfere 300 para Alice (C1)
-        transfere(todasContas.get(6), todasContas.get(0), 300);
+        // Laura (C12) PIX para Igor (C9)
+        transferenciaPIX((Transferiveis) todasContas.get(11), todasContas.get(8), 50);
 
-        // === SALDOS FINAIS POR AGÊNCIA ===
+        // Gabriel (C7) TED para Alice (C1)
+        transferenciaTED((Transferiveis) todasContas.get(6), todasContas.get(0), 300);
+
+        // Mostrar saldo final por agência
         System.out.println("\n==== Bradesco Agência 0001 ====");
         bradescoAg1.exibirContas();
 
@@ -89,13 +93,21 @@ public class Main {
         santanderAg2.exibirContas();
     }
 
-    private static void transfere(Conta origem, Conta destino, double valor) {
-        if (origem.sacar(valor) > 0) {
-            destino.depositar(valor);
-            System.out.println("Transferência de " + valor + " realizada de " +
-                    origem.getTitular().getNome() + " para " + destino.getTitular().getNome());
+    private static void transferenciaTED(Transferiveis origem, Conta destino, double valor) {
+        double resultado = origem.transferenciaTED(valor, destino);
+        if (resultado > 0) {
+            System.out.println("TED de " + valor + " realizada de " + ((Conta) origem).getTitular().getNome() + " para " + destino.getTitular().getNome());
         } else {
-            System.out.println("Transferência falhou: saldo insuficiente em " + origem.getTitular().getNome());
+            System.out.println("Falha na TED de " + ((Conta) origem).getTitular().getNome());
+        }
+    }
+
+    private static void transferenciaPIX(Transferiveis origem, Conta destino, double valor) {
+        double resultado = origem.transferenciaPIX(valor, destino);
+        if (resultado > 0) {
+            System.out.println("PIX de " + valor + " realizado de " + ((Conta) origem).getTitular().getNome() + " para " + destino.getTitular().getNome());
+        } else {
+            System.out.println("Falha no PIX de " + ((Conta) origem).getTitular().getNome());
         }
     }
 }

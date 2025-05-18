@@ -13,12 +13,20 @@ public class ContaSalario extends Conta implements Transferiveis {
     }
 
     @Override
-    public double transferenciaTED(double valor) {
-        return 0;
+    public double transferenciaTED(double valor, Conta contaDestino) {
+        double taxa = 5.0;
+        if (valor + taxa <= this.saldo && valor > 0) {
+            this.saldo -= (valor + taxa);
+            contaDestino.depositar(valor);
+            return valor;
+        }
+        return 0; // falha na transferência
     }
 
+    // Conta salário não permite PIX
     @Override
-    public double transferenciaPIX(double valor) {
+    public double transferenciaPIX(double valor, Conta contaDestino) {
+        System.out.println("PIX não disponível para Conta Salário");
         return 0;
     }
 }
